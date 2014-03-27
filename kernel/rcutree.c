@@ -123,13 +123,12 @@ static int rcu_scheduler_fully_active __read_mostly;
  */
 static DEFINE_PER_CPU(struct task_struct *, rcu_cpu_kthread_task);
 DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
-DEFINE_PER_CPU(int, rcu_cpu_kthread_cpu);
 DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
 DEFINE_PER_CPU(char, rcu_cpu_has_work);
 
 #endif /* #ifdef CONFIG_RCU_BOOST */
 
-static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu);
+static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu);
 static void invoke_rcu_core(void);
 static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
 
@@ -295,7 +294,9 @@ cpu_has_callbacks_ready_to_invoke(struct rcu_data *rdp)
 static int
 cpu_needs_another_gp(struct rcu_state *rsp, struct rcu_data *rdp)
 {
-	return *rdp->nxttail[RCU_DONE_TAIL] && !rcu_gp_in_progress(rsp);
+	return *rdp->nxttail[RCU_DONE_TAIL +
+			     ACCESS_ONCE(rsp->completed) != rdp->completed] &&
+	       !rcu_gp_in_progress(rsp);
 }
 
 /*
@@ -724,7 +725,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
 	int cpu;
 	long delta;
 	unsigned long flags;
-	int ndetected;
+	int ndetected = 0;
 	struct rcu_node *rnp = rcu_get_root(rsp);
 
 	/* Only let one CPU complain about others per time interval. */
@@ -1412,8 +1413,7 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
 	struct rcu_node *rnp = rdp->mynode;  /* Outgoing CPU's rnp. */
 
 	/* Adjust any no-longer-needed kthreads. */
-	rcu_stop_cpu_kthread(cpu);
-	rcu_node_kthread_setaffinity(rnp, -1);
+	rcu_boost_kthread_setaffinity(rnp, -1);
 
 	/* Remove the dying CPU from the bitmasks in the rcu_node hierarchy. */
 
@@ -2357,12 +2357,10 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
 		break;
 	case CPU_ONLINE:
 	case CPU_DOWN_FAILED:
-		rcu_node_kthread_setaffinity(rnp, -1);
-		rcu_cpu_kthread_setrt(cpu, 1);
+		rcu_boost_kthread_setaffinity(rnp, -1);
 		break;
 	case CPU_DOWN_PREPARE:
-		rcu_node_kthread_setaffinity(rnp, cpu);
-		rcu_cpu_kthread_setrt(cpu, 0);
+		rcu_boost_kthread_setaffinity(rnp, cpu);
 		break;
 	case CPU_DYING:
 	case CPU_DYING_FROZEN:
