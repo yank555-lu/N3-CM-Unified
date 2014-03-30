@@ -581,8 +581,20 @@ struct patt_config red[] = {
 	},
 };
 
-
+// Yank555.lu : Kernel boot LED signature
 struct patt_config powering_on[] = {
+        {
+                .id = QPNP_ID_RGB_RED,
+                .duty_pcts = (int [] ){
+                        79, 80, 80, 81, 82, 83, 84, 85, 85, 86, 87, 88, 89, 90, 91, 92, 92, 93,
+                        94, 95, 96, 97, 98, 99, 100,
+                },
+                .num_duty_pcts = 25,
+                .ramp_step_ms = 31,
+                .pwm_period_us = 1000,
+                .lo_pause = 200,
+                .hi_pause = 200,
+        },
         {
                 .id = QPNP_ID_RGB_GREEN,
                 .duty_pcts = (int [] ){
@@ -595,19 +607,35 @@ struct patt_config powering_on[] = {
                 .lo_pause = 200,
                 .hi_pause = 200,
         },
-        {
-                .id = QPNP_ID_RGB_BLUE,
-                .duty_pcts = (int [] ){
-                        79, 80, 80, 81, 82, 83, 84, 85, 85, 86, 87, 88, 89, 90, 91, 92, 92, 93,
-                        94, 95, 96, 97, 98, 99, 100,
-                },
-                .num_duty_pcts = 25,
-                .ramp_step_ms = 31,
-                .pwm_period_us = 1000,
-                .lo_pause = 200,
-                .hi_pause = 200,
-        },
 };
+
+// Stock Samsung pattern
+//struct patt_config powering_on[] = {
+//        {
+//                .id = QPNP_ID_RGB_GREEN,
+//                .duty_pcts = (int [] ){
+//                        8, 10 , 11, 13, 15, 17, 18, 19, 20, 22, 24, 26, 28, 31, 33, 34, 37, 39,
+//                        41, 43, 44, 46, 48, 49, 51,
+//                },
+//                .num_duty_pcts = 25,
+//                .ramp_step_ms = 31,
+//                .pwm_period_us = 1000,
+//                .lo_pause = 200,
+//                .hi_pause = 200,
+//        },
+//        {
+//                .id = QPNP_ID_RGB_BLUE,
+//                .duty_pcts = (int [] ){
+//                        79, 80, 80, 81, 82, 83, 84, 85, 85, 86, 87, 88, 89, 90, 91, 92, 92, 93,
+//                        94, 95, 96, 97, 98, 99, 100,
+//                },
+//                .num_duty_pcts = 25,
+//                .ramp_step_ms = 31,
+//                .pwm_period_us = 1000,
+//                .lo_pause = 200,
+//                .hi_pause = 200,
+//        },
+//};
 
 struct patt_config charging_error[] = {
         {
