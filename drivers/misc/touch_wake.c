@@ -21,6 +21,9 @@
  * v1.4 : cleanup digitizer handling (only dissallow disabling while we're actually
  *                                    listening for touch events)
  *
+ * v1.4a: reduce proxy sensor threshold (150 -> 20) to avoid misdetection when calling
+ *        (add dmesg debug output when proxi sensor is read)
+ *
  * --------------------------------------------------------------------------------------
  *
  * Base idea by Ezekeel
@@ -44,7 +47,7 @@
  *
  * /sys/class/misc/touchwake/proximity_threshold (rw) :
  *
- *     Sets the threshold from which to consider the proxy triggered (which will disable touchwake)
+ *     Sets the threshold from which to consider the proximity sensor triggered (which will disable touchwake)
  *
  *     NB: This serves as a kind of in-call detection to not turn the screen on during a call when placing
  *         the device to the ear
@@ -55,7 +58,7 @@
  *
  * /sys/class/misc/touchwake/version (ro) :
  *
- *     Display the current version of the eXtended ConTRoLs
+ *     Display the current version of TouchWake
  *
  * /sys/class/misc/touchwake/debug (ro) :
  *
@@ -92,7 +95,7 @@ static bool timed_out = true;
 static bool touchwake_active = false;
 static bool use_wakelock = true;
 static unsigned int touchoff_delay = 5000;
-static u16 proximity_threshold = 150;
+static u16 proximity_threshold = 20;
 
 static void touchwake_touchoff(struct work_struct *touchoff_work);
 static DECLARE_DELAYED_WORK(touchoff_work, touchwake_touchoff);
@@ -129,8 +132,15 @@ static void touchwake_enable_touch(void)
 
 bool proxy_is_active(void)
 {
+	unsigned int proxi_data;
+
+	proxi_data = get_proxy_data();
+
+	#ifdef TOUCHWAKE_DEBUG_PRINT
+	pr_info("[TOUCHWAKE] Proximity data / threshold : %u / %u\n", get_proxy_data(), proximity_threshold);
+	#endif
 	// Consider proxy active when higher than configured threshold
-	return (get_proxy_data() > proximity_threshold);
+	return (proxi_data > proximity_threshold);
 }
 
 static void touchwake_suspend(struct power_suspend * h)

@@ -6,9 +6,9 @@
 #include <linux/input.h>
 #include "../../drivers/sensorhub/stm/ssp.h"
 
-//#define TOUCHWAKE_DEBUG_PRINT
+#define TOUCHWAKE_DEBUG_PRINT
 
-#define TOUCHWAKE_VERSION "1.4 by Yank555.lu"
+#define TOUCHWAKE_VERSION "1.4a by Yank555.lu"
 #define TIME_LONGPRESS 500
 #define POWERPRESS_DELAY 60
 #define POWERPRESS_TIMEOUT 1000
