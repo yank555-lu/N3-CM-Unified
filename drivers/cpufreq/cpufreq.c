@@ -32,6 +32,10 @@
 
 #include <trace/events/power.h>
 
+#ifdef CONFIG_CPUFREQ_HARDLIMIT
+#include <linux/cpufreq_hardlimit.h>
+#endif
+
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
@@ -331,6 +335,23 @@ void cpufreq_notify_utilization(struct cpufreq_policy *policy,
 
 }
 
+/* Yank555.lu : CPU Hardlimit - Hook to force scaling_max_freq to be updated on Hardlimit change */
+#ifdef CONFIG_CPUFREQ_HARDLIMIT
+extern void update_scaling_limits(unsigned int freq_min, unsigned int freq_max)
+{
+	int cpu;
+	struct cpufreq_policy *policy;
+
+	for_each_possible_cpu(cpu) {
+		policy = cpufreq_cpu_get(cpu);
+		if (policy != NULL) {
+			policy->user_policy.max = policy->max = freq_max;
+			policy->user_policy.min = policy->min = freq_min;
+		}
+	}
+}
+#endif
+
 /*********************************************************************
  *                          SYSFS INTERFACE                          *
  *********************************************************************/
@@ -454,13 +475,60 @@ static ssize_t store_##file_name					\
 	return ret ? ret : count;					\
 }
 
+#ifndef CONFIG_CPUFREQ_HARDLIMIT
 #ifdef CONFIG_SEC_PM
 
 /* Disable scaling_min_freq store */
-	store_one(scaling_min_freq, min);
+store_one(scaling_min_freq, min);
 #endif
-
 store_one(scaling_max_freq, max);
+#else
+static ssize_t store_scaling_min_freq
+(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	unsigned int new_freq;
+	struct cpufreq_policy new_policy;
+
+	ret = cpufreq_get_policy(&new_policy, policy->cpu);
+	if (ret)
+		return -EINVAL;
+
+	ret = sscanf(buf, "%u", &new_freq);
+	/* Enforce hardlimit, refuse higher then current scaling max */
+	new_policy.min = min(new_policy.max, check_cpufreq_hardlimit(new_freq));
+	if (ret != 1)
+		return -EINVAL;
+
+	ret = __cpufreq_set_policy(policy, &new_policy);
+	policy->user_policy.min = policy->min;
+
+	return ret ? ret : count;
+}
+
+static ssize_t store_scaling_max_freq
+(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	unsigned int new_freq;
+	struct cpufreq_policy new_policy;
+
+	ret = cpufreq_get_policy(&new_policy, policy->cpu);
+	if (ret)
+		return -EINVAL;
+
+	ret = sscanf(buf, "%u", &new_freq);
+	/* Enforce hardlimit, refuse lower then current scaling min */
+	new_policy.max = max(new_policy.min,check_cpufreq_hardlimit(new_freq));
+	if (ret != 1)
+		return -EINVAL;
+
+	ret = __cpufreq_set_policy(policy, &new_policy);
+	policy->user_policy.max = policy->max;
+
+	return ret ? ret : count;
+}
+#endif
 
 /**
  * show_cpuinfo_cur_freq - current CPU frequency as detected by hardware
