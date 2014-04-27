@@ -4158,6 +4158,8 @@ unsigned int taiko_read(struct snd_soc_codec *codec,
 	unsigned int val;
 	int ret;
 
+	struct wcd9xxx *wcd9xxx = codec->control_data;
+
 	if (reg == SND_SOC_NOPM)
 		return 0;
 
@@ -4173,7 +4175,7 @@ unsigned int taiko_read(struct snd_soc_codec *codec,
 				reg, ret);
 	}
 
-	val = wcd9xxx_reg_read(codec->control_data, reg);
+	val = wcd9xxx_reg_read(&wcd9xxx->core_res, reg);
 	return val;
 }
 #ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
@@ -4187,6 +4189,7 @@ int taiko_write(struct snd_soc_codec *codec, unsigned int reg,
 	unsigned int value)
 {
 	int ret;
+	struct wcd9xxx *wcd9xxx = codec->control_data;
 #ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
 	int val;
 #endif
@@ -4212,9 +4215,9 @@ int taiko_write(struct snd_soc_codec *codec, unsigned int reg,
 		snd_hax_cache_write(reg, value);
 		val = value;
 	}
-	return wcd9xxx_reg_write(codec->control_data, reg, val);
+	return wcd9xxx_reg_write(&wcd9xxx->core_res, reg, val);
 #else
-	return wcd9xxx_reg_write(codec->control_data, reg, value);
+	return wcd9xxx_reg_write(&wcd9xxx->core_res, reg, value);
 #endif
 }
 #ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
