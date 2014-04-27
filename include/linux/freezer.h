@@ -213,6 +213,26 @@ static inline long freezable_schedule_timeout_interruptible(long timeout)
 	return __retval;
 }
 
+/* Like schedule_timeout(), but should not block the freezer. */
+#define freezable_schedule_timeout(timeout)				\
+({									\
+	long __retval;							\
+	freezer_do_not_count();						\
+	__retval = schedule_timeout(timeout);				\
+	freezer_count();						\
+	__retval;							\
+})
+
+/* Like schedule_timeout_interruptible(), but should not block the freezer. */
+#define freezable_schedule_timeout_interruptible(timeout)		\
+({									\
+	long __retval;							\
+	freezer_do_not_count();						\
+	__retval = schedule_timeout_interruptible(timeout);		\
+	freezer_count();						\
+	__retval;							\
+})
+
 /* Like schedule_timeout_killable(), but should not block the freezer. */
 static inline long freezable_schedule_timeout_killable(long timeout)
 {
@@ -246,6 +266,17 @@ static inline int freezable_schedule_hrtimeout_range(ktime_t *expires,
 	freezer_count();
 	return __retval;
 }
+
+/* Like schedule_hrtimeout_range(), but should not block the freezer. */
+#define freezable_schedule_hrtimeout_range(expires, delta, mode)	\
+({									\
+	int __retval;							\
+	freezer_do_not_count();						\
+	__retval = schedule_hrtimeout_range(expires, delta, mode);	\
+	freezer_count();						\
+	__retval;							\
+})
+
 
 /*
  * Freezer-friendly wrappers around wait_event_interruptible(),
@@ -291,7 +322,7 @@ static inline int freezable_schedule_hrtimeout_range(ktime_t *expires,
 	__retval;							\
 })
 
-#define wait_event_freezable_exclusive(wq, condition)			\
+#define wait_event_freezable_exclusive(wq, condition)		\
 ({									\
 	int __retval;							\
 	freezer_do_not_count();						\
