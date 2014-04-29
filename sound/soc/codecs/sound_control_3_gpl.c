@@ -41,7 +41,7 @@ static unsigned int cached_regs[] = {6, 6, 0, 0, 0, 0, 0, 0, 0, 0,
 
 static unsigned int *cache_select(unsigned int reg)
 {
-	unsigned int *out;
+	unsigned int *out = NULL;
 
         switch (reg) {
                 case TAIKO_A_RX_HPH_L_GAIN:
@@ -144,8 +144,8 @@ int snd_hax_reg_access(unsigned int reg)
 		case TAIKO_A_CDC_TX3_VOL_CTL_GAIN:
 		case TAIKO_A_CDC_TX4_VOL_CTL_GAIN:
 		case TAIKO_A_CDC_TX5_VOL_CTL_GAIN:
-		case TAIKO_A_CDC_TX6_VOL_CTL_GAIN:
-		case TAIKO_A_CDC_TX7_VOL_CTL_GAIN:
+//		case TAIKO_A_CDC_TX6_VOL_CTL_GAIN: // Disable access lock to cam-mic
+//		case TAIKO_A_CDC_TX7_VOL_CTL_GAIN: // Disable access lock to mic (caused mic not working when calling on speaker)
 		case TAIKO_A_CDC_TX8_VOL_CTL_GAIN:
 		case TAIKO_A_CDC_TX9_VOL_CTL_GAIN:
 		case TAIKO_A_CDC_TX10_VOL_CTL_GAIN:
