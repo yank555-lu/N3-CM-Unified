@@ -32,6 +32,14 @@
  *
  *   set or show the wakeup kick duration (in ms)
  *
+ * /sys/kernel/cpufreq/touchboost_lo_freq (rw)
+ *
+ *   set or show touchboost low frequency
+ *
+ * /sys/kernel/cpufreq/touchboost_hi_freq (rw)
+ *
+ *   set or show touchboost high frequency
+ *
  * /sys/kernel/cpufreq/available_frequencies (ro)
  *
  *   display list of available CPU frequencies for convenience
@@ -63,6 +71,8 @@ unsigned int hardlimit_max_screen_off = CPUFREQ_HARDLIMIT_MAX_SCREEN_OFF_STOCK; 
 unsigned int wakeup_kick_freq         = CPUFREQ_HARDLIMIT_MIN_STOCK;            /* default to stock behaviour */
 unsigned int wakeup_kick_delay        = CPUFREQ_HARDLIMIT_WAKEUP_KICK_DELAY;
 unsigned int wakeup_kick_active       = CPUFREQ_HARDLIMIT_WAKEUP_KICK_INACTIVE;
+unsigned int touchboost_lo_freq       = CPUFREQ_HARDLIMIT_TOUCHBOOST_LO_STOCK;  /* default to stock behaviour */
+unsigned int touchboost_hi_freq       = CPUFREQ_HARDLIMIT_TOUCHBOOST_HI_STOCK;  /* default to stock behaviour */
 unsigned int current_limit_max        = CPUFREQ_HARDLIMIT_MAX_SCREEN_ON_STOCK;
 unsigned int current_limit_min        = CPUFREQ_HARDLIMIT_MIN_STOCK;
 
@@ -265,6 +275,80 @@ static ssize_t wakeup_kick_delay_store(struct kobject *kobj, struct kobj_attribu
 static struct kobj_attribute wakeup_kick_delay_attribute =
 __ATTR(wakeup_kick_delay, 0666, wakeup_kick_delay_show, wakeup_kick_delay_store);
 
+/* sysfs interface for "touchboost_lo_freq" */
+static ssize_t touchboost_lo_freq_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", touchboost_lo_freq);
+}
+
+static ssize_t touchboost_lo_freq_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+
+	unsigned int new_touchboost_lo_freq, i;
+
+	struct cpufreq_frequency_table *table;
+
+	if (!sscanf(buf, "%du", &new_touchboost_lo_freq))
+		return -EINVAL;
+
+	if (new_touchboost_lo_freq == touchboost_lo_freq)
+		return count;
+
+	table = cpufreq_frequency_get_table(0); /* Get frequency table */
+
+	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++)
+		if (table[i].frequency == new_touchboost_lo_freq) {
+			touchboost_lo_freq = new_touchboost_lo_freq;
+			/* Touchboost high freq can never be lower than touchboost low freq */
+			if(touchboost_hi_freq < touchboost_lo_freq)
+				touchboost_hi_freq = touchboost_lo_freq;
+			return count;
+		}
+
+	return -EINVAL;
+
+}
+
+static struct kobj_attribute touchboost_lo_freq_attribute =
+__ATTR(touchboost_lo_freq, 0666, touchboost_lo_freq_show, touchboost_lo_freq_store);
+
+/* sysfs interface for "touchboost_hi_freq" */
+static ssize_t touchboost_hi_freq_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", touchboost_hi_freq);
+}
+
+static ssize_t touchboost_hi_freq_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+
+	unsigned int new_touchboost_hi_freq, i;
+
+	struct cpufreq_frequency_table *table;
+
+	if (!sscanf(buf, "%du", &new_touchboost_hi_freq))
+		return -EINVAL;
+
+	if (new_touchboost_hi_freq == touchboost_hi_freq)
+		return count;
+
+	table = cpufreq_frequency_get_table(0); /* Get frequency table */
+
+	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++)
+		if (table[i].frequency == new_touchboost_hi_freq) {
+			touchboost_hi_freq = new_touchboost_hi_freq;
+			/* Touchboost low freq can never be higher than touchboost high freq */
+			if(touchboost_lo_freq > touchboost_hi_freq)
+				touchboost_lo_freq = touchboost_hi_freq;
+			return count;
+		}
+
+	return -EINVAL;
+
+}
+
+static struct kobj_attribute touchboost_hi_freq_attribute =
+__ATTR(touchboost_hi_freq, 0666, touchboost_hi_freq_show, touchboost_hi_freq_store);
+
 /* sysfs interface for "available_frequencies" */
 static ssize_t available_frequencies_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -320,6 +404,8 @@ static struct attribute *hardlimit_attrs[] = {
 	&hardlimit_max_screen_off_attribute.attr,
 	&wakeup_kick_freq_attribute.attr,
 	&wakeup_kick_delay_attribute.attr,
+	&touchboost_lo_freq_attribute.attr,
+	&touchboost_hi_freq_attribute.attr,
 	&available_frequencies_attribute.attr,
 	&current_limit_min_attribute.attr,
 	&current_limit_max_attribute.attr,

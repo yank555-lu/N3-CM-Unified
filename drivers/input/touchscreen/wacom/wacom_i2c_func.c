@@ -28,6 +28,10 @@
 #define CONFIG_SAMSUNG_KERNEL_DEBUG_USER
 #endif
 
+#ifdef CONFIG_CPUFREQ_HARDLIMIT
+#include <linux/cpufreq_hardlimit.h>
+#endif
+
 #ifdef WACOM_BOOSTER
 static void wacom_change_dvfs_lock(struct work_struct *work)
 {
@@ -40,8 +44,8 @@ static void wacom_change_dvfs_lock(struct work_struct *work)
 
 	if (wac_i2c->dvfs_boost_mode == DVFS_STAGE_DUAL) {
 		retval = set_freq_limit(DVFS_TOUCH_ID,
-			MIN_TOUCH_LIMIT_SECOND);
-		wac_i2c->dvfs_freq = MIN_TOUCH_LIMIT_SECOND;
+			touchboost_lo_freq);
+		wac_i2c->dvfs_freq = touchboost_lo_freq;
 	} else if (wac_i2c->dvfs_boost_mode == DVFS_STAGE_SINGLE ||
 		wac_i2c->dvfs_boost_mode == DVFS_STAGE_TRIPLE) {
 		retval = set_freq_limit(DVFS_TOUCH_ID, -1);
@@ -95,14 +99,14 @@ void wacom_set_dvfs_lock(struct wacom_i2c *wac_i2c, int on)
 
 		if (!wac_i2c->dvfs_lock_status || wac_i2c->dvfs_old_stauts < on) {
 			cancel_delayed_work(&wac_i2c->work_dvfs_chg);
-			if (wac_i2c->dvfs_freq != MIN_TOUCH_LIMIT) {
+			if (wac_i2c->dvfs_freq != touchboost_hi_freq) {
 				if (wac_i2c->dvfs_boost_mode == DVFS_STAGE_TRIPLE)
 					ret = set_freq_limit(DVFS_TOUCH_ID,
-						MIN_TOUCH_LIMIT_SECOND);
+						touchboost_lo_freq);
 				else
 					ret = set_freq_limit(DVFS_TOUCH_ID,
-						MIN_TOUCH_LIMIT);
-				wac_i2c->dvfs_freq = MIN_TOUCH_LIMIT;
+						touchboost_hi_freq);
+				wac_i2c->dvfs_freq = touchboost_hi_freq;
 				if (ret < 0)
 					dev_info(&wac_i2c->client->dev,
 						"%s: cpu first lock failed(%d)\n",
