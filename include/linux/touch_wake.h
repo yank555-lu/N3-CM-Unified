@@ -4,11 +4,11 @@
 #define _LINUX_TOUCH_WAKE_H
 
 #include <linux/input.h>
-#include "../../drivers/sensorhub/stm/ssp.h"
+#include "../../drivers/sensorhub/stm32f/ssp.h"
 
 #define TOUCHWAKE_DEBUG_PRINT
 
-#define TOUCHWAKE_VERSION "1.4a by Yank555.lu"
+#define TOUCHWAKE_VERSION "1.4b by Yank555.lu"
 #define TIME_LONGPRESS 500
 #define POWERPRESS_DELAY 60
 #define POWERPRESS_TIMEOUT 1000

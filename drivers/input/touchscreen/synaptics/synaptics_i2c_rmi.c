@@ -615,7 +615,7 @@ static struct synaptics_rmi4_f51_handle *f51;
 #endif
 
 #ifdef CONFIG_TOUCH_WAKE
-static struct synaptics_rmi4_data *touchwake_data;
+static struct synaptics_rmi4_data *touchwake_data = NULL;
 int previous_touch_state = false;
 #endif
 

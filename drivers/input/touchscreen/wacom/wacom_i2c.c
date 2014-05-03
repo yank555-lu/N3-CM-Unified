@@ -49,7 +49,7 @@ static struct wacom_features wacom_feature_EMR = {
 };
 
 #ifdef CONFIG_TOUCH_WAKE
-static struct wacom_i2c *touchwake_pen_data;
+static struct wacom_i2c *touchwake_pen_data = NULL;
 #endif
 
 static void wacom_enable_irq(struct wacom_i2c *wac_i2c, bool enable)

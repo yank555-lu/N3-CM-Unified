@@ -24,6 +24,9 @@
  * v1.4a: reduce proxy sensor threshold (150 -> 20) to avoid misdetection when calling
  *        (add dmesg debug output when proxi sensor is read)
  *
+ * v1.4b: don't use proxy sensor state when suspending to decide whether or not to
+ *        enable touchwake & small fixes
+ *
  * --------------------------------------------------------------------------------------
  *
  * Base idea by Ezekeel
@@ -95,7 +98,7 @@ static bool timed_out = true;
 static bool touchwake_active = false;
 static bool use_wakelock = true;
 static unsigned int touchoff_delay = 5000;
-static u16 proximity_threshold = 20;
+static u16 proximity_threshold = 150;
 
 static void touchwake_touchoff(struct work_struct *touchoff_work);
 static DECLARE_DELAYED_WORK(touchoff_work, touchwake_touchoff);
@@ -137,7 +140,7 @@ bool proxy_is_active(void)
 	proxi_data = get_proxy_data();
 
 	#ifdef TOUCHWAKE_DEBUG_PRINT
-	pr_info("[TOUCHWAKE] Proximity data / threshold : %u / %u\n", get_proxy_data(), proximity_threshold);
+	pr_info("[TOUCHWAKE] Proximity data / threshold : %u / %u\n", proxi_data, proximity_threshold);
 	#endif
 	// Consider proxy active when higher than configured threshold
 	return (proxi_data > proximity_threshold);
@@ -151,7 +154,7 @@ static void touchwake_suspend(struct power_suspend * h)
 
 	if (touchwake_enabled) {
 		if (likely(touchoff_delay > 0))	{
-			if (timed_out && !proxy_is_active()) {
+			if (timed_out) {
 				#ifdef TOUCHWAKE_DEBUG_PRINT
 				pr_info("[TOUCHWAKE] Suspend - enable touch delay\n");
 				#endif
@@ -168,7 +171,7 @@ static void touchwake_suspend(struct power_suspend * h)
 				touchwake_disable_touch();
 			}
 		} else {
-			if (timed_out && !proxy_is_active()) {
+			if (timed_out) {
 				#ifdef TOUCHWAKE_DEBUG_PRINT
 				pr_info("[TOUCHWAKE] Suspend - keep touch enabled indefinately\n");
 				#endif
@@ -303,8 +306,16 @@ void touch_press(void)
 	pr_info("[TOUCHWAKE] Touch press detected\n");
 	#endif
 
-	if (unlikely(device_suspended && touchwake_enabled && !proxy_is_active() && mutex_trylock(&lock)))
+	if (unlikely(device_suspended && touchwake_enabled && !proxy_is_active() && mutex_trylock(&lock))) {
+		#ifdef TOUCHWAKE_DEBUG_PRINT
+		pr_info("[TOUCHWAKE] Touch press is valid, waking device...\n");
+		#endif
 		schedule_work(&presspower_work);
+	} else {
+		#ifdef TOUCHWAKE_DEBUG_PRINT
+		pr_info("[TOUCHWAKE] Touch press is invalid, ignoring...\n");
+		#endif
+	}
 
 	return;
 }
