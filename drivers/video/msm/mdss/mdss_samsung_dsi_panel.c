@@ -2339,7 +2339,7 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	}
 
 #ifdef CONFIG_POWERSUSPEND
-	set_power_suspend_state_pannel_hook(POWER_SUSPEND_INACTIVE); // Yank555.lu : add hook to handle powersuspend tasks (wakeup)
+	set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE); // Yank555.lu : add hook to handle powersuspend tasks (wakeup)
 #endif
 
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
@@ -2478,7 +2478,7 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	pr_info("mdss_dsi_panel_off --\n");
 
 #ifdef CONFIG_POWERSUSPEND
-	set_power_suspend_state_pannel_hook(POWER_SUSPEND_ACTIVE); // Yank555.lu : add hook to handle powersuspend tasks (sleep)
+	set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE); // Yank555.lu : add hook to handle powersuspend tasks (sleep)
 #endif
 
 #if defined(CONFIG_DUAL_LCD)
