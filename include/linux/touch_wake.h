@@ -6,7 +6,7 @@
 #include <linux/input.h>
 #include "../../drivers/sensorhub/stm32f/ssp.h"
 
-#define TOUCHWAKE_DEBUG_PRINT
+//#define TOUCHWAKE_DEBUG_PRINT
 
 #define TOUCHWAKE_VERSION "1.4b by Yank555.lu"
 #define TIME_LONGPRESS 500
