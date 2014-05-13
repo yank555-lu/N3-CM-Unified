@@ -69,7 +69,7 @@
 unsigned int hardlimit_max_screen_on  = CPUFREQ_HARDLIMIT_MAX_SCREEN_ON_STOCK;  /* default to stock behaviour */
 unsigned int hardlimit_max_screen_off = CPUFREQ_HARDLIMIT_MAX_SCREEN_OFF_STOCK; /* default to stock behaviour */
 unsigned int wakeup_kick_freq         = CPUFREQ_HARDLIMIT_MIN_STOCK;            /* default to stock behaviour */
-unsigned int wakeup_kick_delay        = CPUFREQ_HARDLIMIT_WAKEUP_KICK_DELAY;
+unsigned int wakeup_kick_delay        = CPUFREQ_HARDLIMIT_WAKEUP_KICK_DISABLED;
 unsigned int wakeup_kick_active       = CPUFREQ_HARDLIMIT_WAKEUP_KICK_INACTIVE;
 unsigned int touchboost_lo_freq       = CPUFREQ_HARDLIMIT_TOUCHBOOST_LO_STOCK;  /* default to stock behaviour */
 unsigned int touchboost_hi_freq       = CPUFREQ_HARDLIMIT_TOUCHBOOST_HI_STOCK;  /* default to stock behaviour */
@@ -82,18 +82,40 @@ struct delayed_work stop_wakeup_kick_work;
 
 unsigned int check_cpufreq_hardlimit(unsigned int freq)
 {
+//	#ifdef CPUFREQ_HARDLIMIT_DEBUG
+//	pr_info("[HARDLIMIT] check_cpufreq_hardlimit : min = %u / max = %u / freq = %u / result = %u \n",
+//			current_limit_min,
+//			current_limit_max,
+//			freq,
+//			max(current_limit_min, min(current_limit_max, freq))
+//		);
+//	#endif
 	return max(current_limit_min, min(current_limit_max, freq));
 }
 
 /* Update limits in cpufreq */
 void reapply_hard_limits(void)
 {
+	#ifdef CPUFREQ_HARDLIMIT_DEBUG
+	pr_info("[HARDLIMIT] reapply_hard_limits : min = %u / max = %u \n",
+			current_limit_min,
+			current_limit_max
+		);
+	#endif
 	update_scaling_limits(current_limit_min, current_limit_max);
 }
 
 /* Powersuspend */
 static void cpufreq_hardlimit_suspend(struct power_suspend * h)
 {
+	#ifdef CPUFREQ_HARDLIMIT_DEBUG
+	pr_info("[HARDLIMIT] suspend : old_min = %u / old_max = %u / new_min = %u / new_max = %u \n",
+			current_limit_min,
+			current_limit_max,
+			CPUFREQ_HARDLIMIT_MIN_STOCK,
+			hardlimit_max_screen_off
+		);
+	#endif
 	current_limit_min = CPUFREQ_HARDLIMIT_MIN_STOCK;
 	current_limit_max = hardlimit_max_screen_off;
 	reapply_hard_limits();
@@ -102,11 +124,27 @@ static void cpufreq_hardlimit_suspend(struct power_suspend * h)
 
 static void cpufreq_hardlimit_resume(struct power_suspend * h)
 {
-	if(wakeup_kick_delay == 0) {
+	if(wakeup_kick_delay == CPUFREQ_HARDLIMIT_WAKEUP_KICK_DISABLED) {
+		#ifdef CPUFREQ_HARDLIMIT_DEBUG
+		pr_info("[HARDLIMIT] resume (no wakeup kick) : old_min = %u / old_max = %u / new_min = %u / new_max = %u \n",
+				current_limit_min,
+				current_limit_max,
+				CPUFREQ_HARDLIMIT_MIN_STOCK,
+				hardlimit_max_screen_on
+			);
+		#endif
 		current_limit_min  = CPUFREQ_HARDLIMIT_MIN_STOCK;
 		current_limit_max  = hardlimit_max_screen_on;
 		wakeup_kick_active = CPUFREQ_HARDLIMIT_WAKEUP_KICK_INACTIVE;
 	} else {
+		#ifdef CPUFREQ_HARDLIMIT_DEBUG
+		pr_info("[HARDLIMIT] resume (with wakeup kick) : old_min = %u / old_max = %u / new_min = %u / new_max = %u \n",
+				current_limit_min,
+				current_limit_max,
+				wakeup_kick_freq,
+				max(hardlimit_max_screen_on, min(hardlimit_max_screen_on, wakeup_kick_freq))
+			);
+		#endif
 		current_limit_min  = wakeup_kick_freq;
 		current_limit_max  = max(hardlimit_max_screen_on, min(hardlimit_max_screen_on, wakeup_kick_freq));
 		wakeup_kick_active = CPUFREQ_HARDLIMIT_WAKEUP_KICK_ACTIVE;
@@ -126,6 +164,15 @@ static struct power_suspend cpufreq_hardlimit_suspend_data =
 /* Delayed work */
 static void stop_wakeup_kick(struct work_struct *work)
 {
+	#ifdef CPUFREQ_HARDLIMIT_DEBUG
+	pr_info("[HARDLIMIT] stop wakeup kick : old_min = %u / old_max = %u / new_min = %u / new_max = %u \n",
+			current_limit_min,
+			current_limit_max,
+			CPUFREQ_HARDLIMIT_MIN_STOCK,
+			hardlimit_max_screen_on
+		);
+	#endif
+
 	/* Back to stock scaling min */
 	current_limit_min = CPUFREQ_HARDLIMIT_MIN_STOCK;
 	current_limit_max = hardlimit_max_screen_on;
@@ -263,9 +310,12 @@ static ssize_t wakeup_kick_delay_store(struct kobject *kobj, struct kobj_attribu
 	if (!sscanf(buf, "%du", &new_wakeup_kick_delay))
 		return -EINVAL;
 
-	if (new_wakeup_kick_delay >= 0 && new_wakeup_kick_delay <= CPUFREQ_HARDLIMIT_WAKEUP_KICK_DELAY_MAX) {
+	if (new_wakeup_kick_delay >= CPUFREQ_HARDLIMIT_WAKEUP_KICK_DISABLED &&
+	    new_wakeup_kick_delay <= CPUFREQ_HARDLIMIT_WAKEUP_KICK_DELAY_MAX   ) {
+
 		wakeup_kick_delay = new_wakeup_kick_delay;
 		return count;
+
 	}
 
 	return -EINVAL;
