@@ -160,7 +160,7 @@ static void run_boost_migration(unsigned int cpu)
 	if (sync_threshold) {
 #ifdef CONFIG_CPUFREQ_HARDLIMIT
 		#ifdef CPUFREQ_HARDLIMIT_DEBUG
-		pr_info("[HARDLIMIT] cou-boost.c run_boost_migration (A) : sync_threshold = %u / src_policy.cur = %u / old_boost_min = %u / new_boost_min = %u \n",
+		pr_info("[HARDLIMIT] cpu-boost.c run_boost_migration (A) : sync_threshold = %u / src_policy.cur = %u / old_boost_min = %u / new_boost_min = %u \n",
 				sync_threshold,
 				src_policy.cur,
 				s->boost_min,
@@ -174,7 +174,7 @@ static void run_boost_migration(unsigned int cpu)
 	} else {
 #ifdef CONFIG_CPUFREQ_HARDLIMIT
 		#ifdef CPUFREQ_HARDLIMIT_DEBUG
-		pr_info("[HARDLIMIT] cou-boost.c run_boost_migration (B) : src_policy.cur = %u / old_boost_min = %u / new_boost_min = %u \n",
+		pr_info("[HARDLIMIT] cpu-boost.c run_boost_migration (B) : src_policy.cur = %u / old_boost_min = %u / new_boost_min = %u \n",
 				src_policy.cur,
 				s->boost_min,
 				check_cpufreq_hardlimit(min(sync_threshold, src_policy.cur))

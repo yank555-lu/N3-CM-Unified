@@ -881,11 +881,21 @@ static int cpufreq_add_dev_policy(unsigned int cpu,
 		       policy->governor->name, cpu);
 	}
 	if (per_cpu(cpufreq_policy_save, cpu).min) {
+#ifdef CONFIG_CPUFREQ_HARDLIMIT
+		/* Yank555.lu - Enforce hardlimit when restoring policy */
+		policy->min = check_cpufreq_hardlimit(per_cpu(cpufreq_policy_save, cpu).min);
+#else
 		policy->min = per_cpu(cpufreq_policy_save, cpu).min;
+#endif
 		policy->user_policy.min = policy->min;
 	}
 	if (per_cpu(cpufreq_policy_save, cpu).max) {
+#ifdef CONFIG_CPUFREQ_HARDLIMIT
+		/* Yank555.lu - Enforce hardlimit when restoring policy */
+		policy->max = check_cpufreq_hardlimit(per_cpu(cpufreq_policy_save, cpu).max);
+#else
 		policy->max = per_cpu(cpufreq_policy_save, cpu).max;
+#endif
 		policy->user_policy.max = policy->max;
 	}
 	pr_debug("Restoring CPU%d min %d and max %d\n",

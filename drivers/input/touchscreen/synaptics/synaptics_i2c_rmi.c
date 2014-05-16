@@ -1136,8 +1136,8 @@ static void synaptics_change_dvfs_lock(struct work_struct *work)
 					__func__);
 		} else {
 			retval = set_freq_limit(DVFS_TOUCH_ID,
-					touchboost_lo_freq);
-			rmi4_data->dvfs_freq = touchboost_lo_freq;
+					check_cpufreq_hardlimit(touchboost_lo_freq));
+			rmi4_data->dvfs_freq = check_cpufreq_hardlimit(touchboost_lo_freq);
 		}
 	} else if (rmi4_data->dvfs_boost_mode == DVFS_STAGE_NINTH) {
 		if (rmi4_data->stay_awake) {
@@ -1146,8 +1146,8 @@ static void synaptics_change_dvfs_lock(struct work_struct *work)
 					__func__);
 		} else {
 			retval = set_freq_limit(DVFS_TOUCH_ID,
-					touchboost_hi_freq);
-			rmi4_data->dvfs_freq = touchboost_hi_freq;
+					check_cpufreq_hardlimit(touchboost_hi_freq));
+			rmi4_data->dvfs_freq = check_cpufreq_hardlimit(touchboost_hi_freq);
 		}
 	} else if (rmi4_data->dvfs_boost_mode == DVFS_STAGE_SINGLE ||
 			rmi4_data->dvfs_boost_mode == DVFS_STAGE_TRIPLE) {
@@ -1217,15 +1217,15 @@ static void synaptics_set_dvfs_lock(struct synaptics_rmi4_data *rmi4_data,
 		if ((!rmi4_data->dvfs_lock_status) || (rmi4_data->dvfs_old_stauts < on)) {
 			cancel_delayed_work(&rmi4_data->work_dvfs_chg);
 
-			if ((rmi4_data->dvfs_freq != touchboost_hi_freq) &&
+			if ((rmi4_data->dvfs_freq != check_cpufreq_hardlimit(touchboost_hi_freq)) &&
 					(rmi4_data->dvfs_boost_mode != DVFS_STAGE_NINTH)) {
 				if (rmi4_data->dvfs_boost_mode == DVFS_STAGE_TRIPLE)
 					ret = set_freq_limit(DVFS_TOUCH_ID,
-						touchboost_lo_freq);
+						check_cpufreq_hardlimit(touchboost_lo_freq));
 				else
 					ret = set_freq_limit(DVFS_TOUCH_ID,
-						touchboost_hi_freq);
-				rmi4_data->dvfs_freq = touchboost_hi_freq;
+						check_cpufreq_hardlimit(touchboost_hi_freq));
+				rmi4_data->dvfs_freq = check_cpufreq_hardlimit(touchboost_hi_freq);
 
 				if (ret < 0)
 					dev_err(&rmi4_data->i2c_client->dev,
@@ -1365,7 +1365,7 @@ static void synaptics_tkey_init_dvfs(struct synaptics_rmi4_data *rmi4_data)
 {
 	mutex_init(&rmi4_data->tkey_dvfs_lock);
 	rmi4_data->tkey_dvfs_boost_mode = DVFS_STAGE_DUAL;
-	rmi4_data->tkey_dvfs_freq = touchboost_lo_freq;
+	rmi4_data->tkey_dvfs_freq = check_cpufreq_hardlimit(touchboost_lo_freq);
 
 	INIT_DELAYED_WORK(&rmi4_data->work_tkey_dvfs_off, synaptics_tkey_set_dvfs_off);
 	INIT_DELAYED_WORK(&rmi4_data->work_tkey_dvfs_chg, synaptics_tkey_change_dvfs_lock);
