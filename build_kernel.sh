@@ -38,7 +38,7 @@ rm $KERNELDIR/boot.img
 rm $KERNELDIR/*.ko
 #compile kernel
 cd $KERNELDIR
-make -j6 || exit 1
+make -j `getconf _NPROCESSORS_ONLN` || exit 1
 
 echo "..............................................................Making new dt image............................................................."
 ./buildtools/dtbtool -o $KERNELDIR/dt.img -s 2048 -p $KERNELDIR/scripts/dtc/ $KERNELDIR/arch/arm/boot/
