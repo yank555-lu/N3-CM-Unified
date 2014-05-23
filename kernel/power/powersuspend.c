@@ -31,7 +31,7 @@
 #include <linux/workqueue.h>
 
 #define MAJOR_VERSION	1
-#define MINOR_VERSION	4
+#define MINOR_VERSION	5
 
 //#define POWER_SUSPEND_DEBUG // Add debugging prints in dmesg
 
@@ -230,7 +230,8 @@ static ssize_t power_suspend_mode_store(struct kobject *kobj,
 	switch (data) {
 		case POWER_SUSPEND_AUTOSLEEP:
 		case POWER_SUSPEND_PANEL:
-		case POWER_SUSPEND_USERSPACE:	mode = data;
+		case POWER_SUSPEND_USERSPACE:
+		case POWER_SUSPEND_HYBRID:	mode = data;
 						return count;
 		default:
 			return -EINVAL;
