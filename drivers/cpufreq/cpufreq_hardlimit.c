@@ -435,8 +435,8 @@ static ssize_t wakeup_kick_freq_store(struct kobject *kobj, struct kobj_attribut
 	if (new_wakeup_kick_freq == wakeup_kick_freq)
 		return count;
 
-	/* Only allow values between current hardlimits */
-	if (new_wakeup_kick_freq > hardlimit_max_screen_on || new_wakeup_kick_freq < hardlimit_max_screen_off)
+	/* Only allow values between current screen on hardlimits */
+	if (new_wakeup_kick_freq > hardlimit_max_screen_on || new_wakeup_kick_freq < hardlimit_min_screen_on)
 		return -EINVAL;
 
 	table = cpufreq_frequency_get_table(0); /* Get frequency table */

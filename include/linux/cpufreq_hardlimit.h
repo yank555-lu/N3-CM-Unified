@@ -15,7 +15,7 @@
 #ifndef _LINUX_CPUFREQ_HARDLIMIT_H
 #define _LINUX_CPUFREQ_HARDLIMIT_H
 
-#define CPUFREQ_HARDLIMIT_VERSION "v2.0 by Yank555.lu"
+#define CPUFREQ_HARDLIMIT_VERSION "v2.0a by Yank555.lu"
 
 //#define CPUFREQ_HARDLIMIT_DEBUG // Add debugging prints in dmesg
 
