@@ -489,10 +489,86 @@ static ssize_t store_##file_name					\
 
 #ifdef CONFIG_SEC_PM
 
+/* Yank555.lu : CPU Hardlimit - Enforce userspace dvfs lock */
+#ifdef CONFIG_CPUFREQ_HARDLIMIT
+static ssize_t store_scaling_min_freq
+(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	struct cpufreq_policy new_policy;
+
+	// Yank555.lu - Enforce userspace dvfs lock
+	switch (userspace_dvfs_lock_status()) {
+		case CPUFREQ_HARDLIMIT_USERSPACE_DVFS_IGNORE:
+			return count;
+		case CPUFREQ_HARDLIMIT_USERSPACE_DVFS_REFUSE:
+			return -EINVAL;
+	}
+
+	ret = cpufreq_get_policy(&new_policy, policy->cpu);
+	if (ret)
+		return -EINVAL;
+
+	ret = sscanf(buf, "%u", &new_policy.min);
+	if (ret != 1)
+		return -EINVAL;
+
+	policy->user_policy.min = new_policy.min;
+	new_policy.user_policy.min = new_policy.min;
+
+	ret = cpufreq_driver->verify(&new_policy);
+	if (ret)
+		pr_err("cpufreq: Frequency verification failed\n");
+
+	ret = __cpufreq_set_policy(policy, &new_policy);
+
+	return ret ? ret : count;
+}
+#else
 /* Disable scaling_min_freq store */
 store_one(scaling_min_freq, min);
+#endif /* CONFIG_CPUFREQ_HARDLIMIT */
+
 #endif
+
+/* Yank555.lu : CPU Hardlimit - Enforce userspace dvfs lock */
+#ifdef CONFIG_CPUFREQ_HARDLIMIT
+static ssize_t store_scaling_max_freq
+(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	struct cpufreq_policy new_policy;
+
+	// Yank555.lu - Enforce userspace dvfs lock
+	switch (userspace_dvfs_lock_status()) {
+		case CPUFREQ_HARDLIMIT_USERSPACE_DVFS_IGNORE:
+			return count;
+		case CPUFREQ_HARDLIMIT_USERSPACE_DVFS_REFUSE:
+			return -EINVAL;
+	}
+
+	ret = cpufreq_get_policy(&new_policy, policy->cpu);
+	if (ret)
+		return -EINVAL;
+
+	ret = sscanf(buf, "%u", &new_policy.max);
+	if (ret != 1)
+		return -EINVAL;
+
+	policy->user_policy.max = new_policy.max;
+	new_policy.user_policy.max = new_policy.max;
+
+	ret = cpufreq_driver->verify(&new_policy);
+	if (ret)
+		pr_err("cpufreq: Frequency verification failed\n");
+
+	ret = __cpufreq_set_policy(policy, &new_policy);
+
+	return ret ? ret : count;
+}
+#else
 store_one(scaling_max_freq, max);
+#endif /* CONFIG_CPUFREQ_HARDLIMIT */
 
 /**
  * show_cpuinfo_cur_freq - current CPU frequency as detected by hardware
