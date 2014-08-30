@@ -27,7 +27,10 @@
 
 #define VSYNC_EXPIRE_TICK	4
 
-static void mdp3_ctrl_pan_display(struct msm_fb_data_type *mfd);
+static void mdp3_ctrl_pan_display(struct msm_fb_data_type *mfd,
+					struct mdp_overlay *req,
+					int image_size,
+					int *pipe_ndx);
 static int mdp3_overlay_unset(struct msm_fb_data_type *mfd, int ndx);
 static int mdp3_histogram_stop(struct mdp3_session_data *session,
 					u32 block);
@@ -1069,7 +1072,10 @@ static int mdp3_ctrl_display_commit_kickoff(struct msm_fb_data_type *mfd,
 	return 0;
 }
 
-static void mdp3_ctrl_pan_display(struct msm_fb_data_type *mfd)
+static void mdp3_ctrl_pan_display(struct msm_fb_data_type *mfd,
+					struct mdp_overlay *req,
+					int image_size,
+					int *pipe_ndx)
 {
 	struct fb_info *fbi;
 	struct mdp3_session_data *mdp3_session;
@@ -1603,47 +1609,6 @@ static int mdp3_ctrl_lut_update(struct msm_fb_data_type *mfd,
 	mdp3_session->lut_sel = (mdp3_session->lut_sel + 1) % 2;
 
 	mutex_unlock(&mdp3_session->lock);
-	return rc;
-}
-
-static int mdp3_overlay_prepare(struct msm_fb_data_type *mfd,
-		struct mdp_overlay_list __user *user_ovlist)
-{
-	struct mdp_overlay_list ovlist;
-	struct mdp3_session_data *mdp3_session = mfd->mdp.private1;
-	struct mdp_overlay *req_list;
-	struct mdp_overlay *req;
-	int rc;
-
-	if (!mdp3_session)
-		return -ENODEV;
-
-	req = &mdp3_session->req_overlay;
-
-	if (copy_from_user(&ovlist, user_ovlist, sizeof(ovlist)))
-		return -EFAULT;
-
-	if (ovlist.num_overlays != 1) {
-		pr_err("OV_PREPARE failed: only 1 overlay allowed\n");
-		return -EINVAL;
-	}
-
-	if (copy_from_user(&req_list, ovlist.overlay_list, sizeof(struct mdp_overlay*)))
-		return -EFAULT;
-
-	if (copy_from_user(req, req_list, sizeof(*req)))
-		return -EFAULT;
-
-	rc = mdp3_overlay_set(mfd, req);
-	if (!IS_ERR_VALUE(rc)) {
-		if (copy_to_user(req_list, req, sizeof(*req)))
-			return -EFAULT;
-	}
-
-	if (put_user(IS_ERR_VALUE(rc) ? 0 : 1,
-			&user_ovlist->processed_overlays))
-		return -EFAULT;
-
 	return rc;
 }
 

@@ -19,7 +19,6 @@
 #include <linux/msm_mdp.h>
 #include <linux/platform_device.h>
 #include <linux/notifier.h>
-#include <linux/kref.h>
 
 #include "mdss.h"
 #include "mdss_mdp_hwio.h"
@@ -33,7 +32,6 @@
 #define MDP_CLK_DEFAULT_RATE	200000000
 #define PHASE_STEP_SHIFT	21
 #define MAX_MIXER_WIDTH		2048
-#define MAX_LINE_BUFFER_WIDTH	2048
 #define MAX_MIXER_HEIGHT	0xFFFF
 #define MAX_IMG_WIDTH		0x3FFF
 #define MAX_IMG_HEIGHT		0x3FFF
@@ -352,11 +350,6 @@ struct mdss_mdp_pipe_smp_map {
 	DECLARE_BITMAP(fixed, MAX_DRV_SUP_MMB_BLKS);
 };
 
-struct mdss_mdp_shared_reg_ctrl {
-	u32 reg_off;
-	u32 bit_off;
-};
-
 struct mdss_mdp_pipe {
 	u32 num;
 	u32 type;
@@ -364,11 +357,7 @@ struct mdss_mdp_pipe {
 	char __iomem *base;
 	u32 ftch_id;
 	u32 xin_id;
-	struct mdss_mdp_shared_reg_ctrl clk_ctrl;
-	struct mdss_mdp_shared_reg_ctrl clk_status;
-
-	struct kref kref;
-
+	atomic_t ref_cnt;
 	u32 play_cnt;
 	int pid;
 	bool is_handed_off;
@@ -404,7 +393,8 @@ struct mdss_mdp_pipe {
 	struct mdss_mdp_data back_buf;
 	struct mdss_mdp_data front_buf;
 
-	struct list_head list;
+	struct list_head used_list;
+	struct list_head cleanup_list;
 
 	struct mdp_overlay_pp_params pp_cfg;
 	struct mdss_pipe_pp_res pp_res;
@@ -430,8 +420,6 @@ struct mdss_overlay_private {
 	struct mutex ov_lock;
 	struct mdss_mdp_ctl *ctl;
 	struct mdss_mdp_wb *wb;
-
-	struct mutex list_lock;
 	struct list_head overlay_list;
 	struct list_head pipes_used;
 	struct list_head pipes_cleanup;
@@ -487,17 +475,6 @@ static inline u32 mdss_mdp_pingpong_read(struct mdss_mdp_mixer *mixer, u32 reg)
 	return readl_relaxed(mixer->pingpong_base + reg);
 }
 
-static inline int mdss_mdp_iommu_dyn_attach_supported(
-	struct mdss_data_type *mdata)
-{
-	return (mdata->mdp_rev >= MDSS_MDP_HW_REV_103);
-}
-
-static inline int mdss_mdp_line_buffer_width(void)
-{
-	return MAX_LINE_BUFFER_WIDTH;
-}
-
 irqreturn_t mdss_mdp_isr(int irq, void *ptr);
 int mdss_iommu_attach(struct mdss_data_type *mdata);
 int mdss_iommu_dettach(struct mdss_data_type *mdata);
@@ -531,12 +508,6 @@ int mdss_mdp_overlay_get_buf(struct msm_fb_data_type *mfd,
 			     struct msmfb_data *planes,
 			     int num_planes,
 			     u32 flags);
-int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
-	struct mdp_overlay *req, struct mdss_mdp_pipe **ppipe);
-void mdss_mdp_handoff_cleanup_pipes(struct msm_fb_data_type *mfd,
-							u32 type);
-int mdss_mdp_overlay_release(struct msm_fb_data_type *mfd, int ndx);
-int mdss_mdp_overlay_start(struct msm_fb_data_type *mfd);
 int mdss_mdp_video_addr_setup(struct mdss_data_type *mdata,
 		u32 *offsets,  u32 count);
 int mdss_mdp_video_start(struct mdss_mdp_ctl *ctl);
@@ -590,7 +561,6 @@ struct mdss_mdp_pipe *mdss_mdp_mixer_stage_pipe(struct mdss_mdp_ctl *ctl,
 						int mux, int stage);
 int mdss_mdp_mixer_pipe_update(struct mdss_mdp_pipe *pipe, int params_changed);
 int mdss_mdp_mixer_pipe_unstage(struct mdss_mdp_pipe *pipe);
-void mdss_mdp_mixer_unstage_all(struct mdss_mdp_mixer *mixer);
 int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg);
 int mdss_mdp_display_wait4comp(struct mdss_mdp_ctl *ctl);
 int mdss_mdp_display_wait4pingpong(struct mdss_mdp_ctl *ctl);
@@ -664,12 +634,10 @@ int mdss_mdp_mixer_addr_setup(struct mdss_data_type *mdata, u32 *mixer_offsets,
 int mdss_mdp_ctl_addr_setup(struct mdss_data_type *mdata, u32 *ctl_offsets,
 		u32 *wb_offsets, u32 len);
 
-int mdss_mdp_pipe_fetch_halt(struct mdss_mdp_pipe *pipe);
 int mdss_mdp_pipe_destroy(struct mdss_mdp_pipe *pipe);
 int mdss_mdp_pipe_queue_data(struct mdss_mdp_pipe *pipe,
 			     struct mdss_mdp_data *src_data);
 int mdss_mdp_pipe_fetch_halt(struct mdss_mdp_pipe *pipe);
-int mdss_mdp_vbif_axi_halt(struct mdss_data_type *mdata);
 
 int mdss_mdp_data_check(struct mdss_mdp_data *data,
 			struct mdss_mdp_plane_sizes *ps);
