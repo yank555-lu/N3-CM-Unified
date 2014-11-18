@@ -607,8 +607,8 @@ service mdnsd /system/bin/mdnsd
     oneshot
 
 # Start kernel configuration
-service yank555-kernel /system/bin/sh /system/etc/init.kernel.sh
-    class main
+service yank555-kernel /res/sbin/sh /system/etc/init.kernel.sh
+    class late_start
     user root
     group root
     oneshot
